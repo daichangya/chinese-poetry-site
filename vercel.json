@@ -3,7 +3,6 @@
   "buildCommand": "npm run build",
   "installCommand": "npm install",
   "env": {
-    "DATABASE_TYPE": "json",
     "BUILD_SSG_POEM_LIMIT": "5000",
     "BUILD_SSG_AUTHOR_LIMIT": "50000"
   }
