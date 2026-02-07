@@ -35,6 +35,7 @@ export default function RootLayout({
   return (
     <html lang="zh-Hans" suppressHydrationWarning>
       <head>
+        <meta name="baidu-site-verification" content="codeva-QthFvdvWPv" />
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){var t=localStorage.getItem("poetry-theme");if(t==="warm"||t==="ink"||t==="blue")document.documentElement.setAttribute("data-theme",t);})();`,
