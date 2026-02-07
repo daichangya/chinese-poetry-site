@@ -2,6 +2,10 @@
 
 基于 Next.js 与 SQLite、[chinese-poetry](https://github.com/daichangya/chinese-poetry) 数据源的中文诗词阅读网站。构建时从中间产出物（每首诗一个 .md）入库，运行时由服务端读库与 API 提供数据。
 
+## 网站效果
+
+![诗词站首页](docs/shi-cn.png)
+
 ## 功能概览
 
 - **浏览与检索**：诗词列表、按朝代/作者/标签筛选、全局搜索（服务端 API 查询）
