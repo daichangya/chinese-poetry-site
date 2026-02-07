@@ -1,0 +1,99 @@
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Ma+Shan+Zheng&family=Zhi+Mang+Xing&family=Long+Cang&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 默认主题：浪漫粉 */
+:root {
+  --color-primary: #db2777;
+  --color-secondary: #f472b6;
+  --color-cta: #ca8a04;
+  --color-background: #fdf2f8;
+  --color-text: #831843;
+}
+
+/* 暖纸·棕 */
+[data-theme="warm"] {
+  --color-primary: #78350f;
+  --color-secondary: #92400e;
+  --color-cta: #b45309;
+  --color-background: #fef3c7;
+  --color-text: #451a03;
+}
+
+/* 墨纸·金 */
+[data-theme="ink"] {
+  --color-primary: #1c1917;
+  --color-secondary: #44403c;
+  --color-cta: #ca8a04;
+  --color-background: #fafaf9;
+  --color-text: #0c0a09;
+}
+
+/* 青墨·蓝 */
+[data-theme="blue"] {
+  --color-primary: #0f172a;
+  --color-secondary: #334155;
+  --color-cta: #0369a1;
+  --color-background: #f8fafc;
+  --color-text: #020617;
+}
+
+body {
+  @apply bg-background text-text font-sans antialiased;
+  font-family: "Noto Serif SC", "Noto Serif JP", serif;
+}
+
+/* 正文字体选项：宋体 / 楷体 / 书法 / 手写 / 艺术 */
+.font-poem-song {
+  font-family: "Songti SC", "SimSun", "宋体", "Noto Serif SC", "Noto Serif JP", serif;
+}
+.font-poem-kai {
+  font-family: "Kaiti SC", "KaiTi", "楷体", "Noto Serif SC", "Noto Serif JP", serif;
+}
+.font-poem-calligraphy {
+  font-family: "Ma Shan Zheng", cursive;
+}
+.font-poem-handwriting {
+  font-family: "Zhi Mang Xing", cursive;
+}
+.font-poem-artistic {
+  font-family: "Long Cang", cursive;
+}
+
+/* Webkit 滚动条 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #d6d3d1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a29e;
+}
+
+/* 字级拼音：拼音在上、汉字在下 */
+ruby.ruby {
+  ruby-align: center;
+}
+ruby.ruby rt {
+  font-size: 0.5em;
+  line-height: 1.2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,45 @@
+# 依赖
+node_modules/
+
+# 构建与产物
+dist/
+.next/
+out/
+
+# 环境变量（保留 .env.example 作示例）
+.env
+.env.local
+.env.*.local
+
+# 日志与调试
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# TypeScript
+*.tsbuildinfo
+
+# 测试
+coverage/
+
+# 部署/工具缓存
+.vercel
+.turbo
+
+# 系统与 IDE
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+*.sublime-*
+
+# 诗词数据：chinese-poetry 为独立仓库；不纳入版本库（Vercel 构建时需自行拉取数据或预置）
+chinese-poetry/
+# 中间 md 产出：gen_markdown 生成，默认 chinese-poetry-md；可被 seed_db 读取入库
+chinese-poetry-md/
+
+.cursor/
+.shared/
+.next/
