@@ -10,7 +10,7 @@ export const dynamicParams = true;
 
 /** 分层 SSG：预渲染前 M 个作者（默认 50），其余按需生成；设 BUILD_SSG_AUTHOR_LIMIT=0 可关闭 */
 export async function generateStaticParams(): Promise<{ slug: string }[]> {
-  const limit = parseInt(process.env.BUILD_SSG_AUTHOR_LIMIT ?? "100", 10) || 0;
+  const limit = parseInt(process.env.BUILD_SSG_AUTHOR_LIMIT ?? "20000", 10) || 0;
   if (limit <= 0) return [];
   const slugs = await getAuthorSlugsForSSG(limit);
   return slugs.map((slug) => ({ slug }));
