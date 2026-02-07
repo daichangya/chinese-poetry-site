@@ -39,6 +39,9 @@ export async function generateSitemaps() {
   ];
 }
 
+/** 延长 sitemap 分片生成超时（Vercel 等）；避免 poems-0/poems-1 数据量大时被截断 */
+export const maxDuration = 60;
+
 export default async function sitemap(
   props: { id: Promise<string> }
 ): Promise<MetadataRoute.Sitemap> {
@@ -111,8 +114,9 @@ export default async function sitemap(
         priority: 0.8,
       }));
     }
-  } catch {
-    // DB 不可用时仅 static 片有内容；其余片返回空数组
+  } catch (err) {
+    // DB/JSON 不可用或超时时，该分片返回空数组；搜索引擎可能报 "could not be read"
+    console.error("[sitemap]", id, err);
   }
 
   return [];
