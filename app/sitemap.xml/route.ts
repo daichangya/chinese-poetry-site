@@ -6,7 +6,7 @@
 
 import { NextResponse } from "next/server";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://shi-ci.cn";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.shi-ci.cn";
 
 export function GET() {
   const index = `<?xml version="1.0" encoding="UTF-8"?>

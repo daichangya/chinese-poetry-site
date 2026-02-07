@@ -16,7 +16,7 @@ export async function generateStaticParams(): Promise<{ slug: string }[]> {
   return slugs.map((slug) => ({ slug }));
 }
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://shi-ci.cn";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.shi-ci.cn";
 
 /** 作者详情页诗文每页条数，与诗人列表页一致 */
 const PAGE_SIZE = 40;

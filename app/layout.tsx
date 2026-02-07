@@ -5,7 +5,7 @@ import Nav from "../components/Nav";
 import Footer from "../components/Footer";
 import AnalyticsOrHeadScripts from "../components/AnalyticsOrHeadScripts";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://shi-ci.cn";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.shi-ci.cn";
 
 export const metadata: Metadata = {
   title: { default: "诗词", template: "%s | 诗词" },

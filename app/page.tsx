@@ -6,7 +6,7 @@ import SidebarLeft from "../components/SidebarLeft";
 import HomeRecommendations from "../components/HomeRecommendations";
 
 const HOME_RECOMMEND_SIZE = 10;
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://shi-ci.cn";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.shi-ci.cn";
 
 export const metadata: Metadata = {
   title: "诗词",

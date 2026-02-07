@@ -13,7 +13,7 @@ import {
   getRhythmics,
 } from "@/lib/db";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://shi-ci.cn";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.shi-ci.cn";
 
 const STATIC_ENTRIES: MetadataRoute.Sitemap = [
   { url: siteUrl, lastModified: new Date(), changeFrequency: "daily", priority: 1 },

@@ -10,7 +10,7 @@ import { ReadingSettingsProvider } from "../../../context/ReadingSettingsContext
 
 export const dynamicParams = true;
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://shi-ci.cn";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.shi-ci.cn";
 
 /** 分层 SSG：从热门选集 tag 中收集约 N 首诗预渲染（默认 5000），其余按需生成；设 BUILD_SSG_POEM_LIMIT=0 可关闭 */
 export async function generateStaticParams(): Promise<{ slug: string }[]> {
