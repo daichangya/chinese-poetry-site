@@ -1,13 +1,15 @@
 /**
- * 动态 sitemap：分片生成。其他页面全部 + 诗文 5 万条；单文件不超 5 万 URL。
- * generateSitemaps 返回 5 片：static、filters（朝代/词牌/标签）、authors、poems-0、poems-1。
+ * 动态 sitemap：分片生成。每文件最多 2500 条 URL，分片数量由 countPoems/countAuthors 动态计算。
+ * generateSitemaps 返回：static、filters、authors-0..N、poems-0..M。
  * @author poetry
  */
 
 import type { MetadataRoute } from "next";
 import {
   getPoemSlugsForSitemap,
-  getAuthorSlugsForSSG,
+  getAuthorSlugsForSitemap,
+  countPoems,
+  countAuthors,
   getDynasties,
   getTags,
   getRhythmics,
@@ -26,16 +28,23 @@ const STATIC_ENTRIES: MetadataRoute.Sitemap = [
   { url: `${siteUrl}/contribute/`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
 ];
 
-const POEM_SITEMAP_LIMIT = 25_000;
-const AUTHOR_SITEMAP_LIMIT = 10_000;
+const POEM_SITEMAP_LIMIT = 2_500;
+const AUTHOR_SITEMAP_LIMIT = 2_500;
 
 export async function generateSitemaps() {
+  const poemCount = await countPoems();
+  const numPoemSlices = Math.ceil(poemCount / POEM_SITEMAP_LIMIT);
+  const poemSitemaps = Array.from({ length: numPoemSlices }, (_, i) => ({ id: `poems-${i}` }));
+
+  const authorCount = await countAuthors();
+  const numAuthorSlices = Math.ceil(authorCount / AUTHOR_SITEMAP_LIMIT);
+  const authorSitemaps = Array.from({ length: numAuthorSlices }, (_, i) => ({ id: `authors-${i}` }));
+
   return [
     { id: "static" },
     { id: "filters" },
-    { id: "authors" },
-    { id: "poems-0" },
-    { id: "poems-1" },
+    ...authorSitemaps,
+    ...poemSitemaps,
   ];
 }
 
@@ -85,34 +94,32 @@ export default async function sitemap(
       return entries;
     }
 
-    if (id === "authors") {
-      const slugs = await getAuthorSlugsForSSG(AUTHOR_SITEMAP_LIMIT);
-      return slugs.map((slug) => ({
-        url: `${siteUrl}/authors/${slug}/`,
-        lastModified: new Date(),
-        changeFrequency: "monthly" as const,
-        priority: 0.8,
-      }));
+    if (id.startsWith("authors-")) {
+      const n = parseInt(id.slice("authors-".length), 10);
+      if (!Number.isNaN(n) && n >= 0) {
+        const offset = n * AUTHOR_SITEMAP_LIMIT;
+        const slugs = await getAuthorSlugsForSitemap(AUTHOR_SITEMAP_LIMIT, offset);
+        return slugs.map((slug) => ({
+          url: `${siteUrl}/authors/${slug}/`,
+          lastModified: new Date(),
+          changeFrequency: "monthly" as const,
+          priority: 0.8,
+        }));
+      }
     }
 
-    if (id === "poems-0") {
-      const slugs = await getPoemSlugsForSitemap(POEM_SITEMAP_LIMIT, 0);
-      return slugs.map((slug) => ({
-        url: `${siteUrl}/poems/${slug}/`,
-        lastModified: new Date(),
-        changeFrequency: "yearly" as const,
-        priority: 0.8,
-      }));
-    }
-
-    if (id === "poems-1") {
-      const slugs = await getPoemSlugsForSitemap(POEM_SITEMAP_LIMIT, POEM_SITEMAP_LIMIT);
-      return slugs.map((slug) => ({
-        url: `${siteUrl}/poems/${slug}/`,
-        lastModified: new Date(),
-        changeFrequency: "yearly" as const,
-        priority: 0.8,
-      }));
+    if (id.startsWith("poems-")) {
+      const n = parseInt(id.slice("poems-".length), 10);
+      if (!Number.isNaN(n) && n >= 0) {
+        const offset = n * POEM_SITEMAP_LIMIT;
+        const slugs = await getPoemSlugsForSitemap(POEM_SITEMAP_LIMIT, offset);
+        return slugs.map((slug) => ({
+          url: `${siteUrl}/poems/${slug}/`,
+          lastModified: new Date(),
+          changeFrequency: "yearly" as const,
+          priority: 0.8,
+        }));
+      }
     }
   } catch (err) {
     // DB/JSON 不可用或超时时，该分片返回空数组；搜索引擎可能报 "could not be read"

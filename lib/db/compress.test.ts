@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { compressText, decompressText } from "./compress.js";
+import { compressText, decompressText, compressToBlob, decompressFromBlob } from "./compress.js";
 
 describe("compressText / decompressText", () => {
   it("短文本不压缩，原样返回", () => {
@@ -32,5 +32,36 @@ describe("compressText / decompressText", () => {
   it("未压缩字符串解压时原样返回", () => {
     const s = '["句一","句二"]';
     expect(decompressText(s)).toBe(s);
+  });
+});
+
+describe("compressToBlob / decompressFromBlob", () => {
+  it("null/空返回 null 或空 Buffer", () => {
+    expect(compressToBlob(null)).toBeNull();
+    expect(compressToBlob("")).toBeNull();
+    expect(decompressFromBlob(null)).toBeNull();
+    expect(decompressFromBlob(undefined)).toBeNull();
+  });
+
+  it("短文本存 UTF-8 Buffer，解压后一致", () => {
+    const s = '["句一","句二"]';
+    const buf = compressToBlob(s)!;
+    expect(Buffer.isBuffer(buf)).toBe(true);
+    expect(buf.toString("utf8")).toBe(s);
+    expect(decompressFromBlob(buf)).toBe(s);
+  });
+
+  it("超阈值存 gzip Buffer，解压后一致", () => {
+    const long = "床前明月光，疑是地上霜。".repeat(20);
+    const buf = compressToBlob(long)!;
+    expect(buf[0]).toBe(0x1f);
+    expect(buf[1]).toBe(0x8b);
+    expect(decompressFromBlob(buf)).toBe(long);
+  });
+
+  it("decompressFromBlob 兼容旧版 base64 字符串", () => {
+    const compressed = compressText("较长内容".repeat(30));
+    expect(compressed).not.toBeNull();
+    expect(decompressFromBlob(compressed)).toBe("较长内容".repeat(30));
   });
 });

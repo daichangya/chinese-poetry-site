@@ -10,7 +10,7 @@ import { loadAll } from "../lib/load_data.js";
 import { loadAuthorBios } from "../lib/load_author_bios.js";
 import { getDb, getDatabasePath, closeDb } from "../lib/db/client.js";
 import { createTables } from "../lib/db/schema.js";
-import { compressText } from "../lib/db/compress.js";
+import { compressToBlob } from "../lib/db/compress.js";
 import { toSlug } from "../lib/slug.js";
 import type { Poem, Author, Dynasty, Tag } from "../lib/types.js";
 
@@ -90,7 +90,7 @@ async function main(): Promise<void> {
   }
   for (const a of authors) {
     const descRaw = bioMap.get(a.slug) ?? null;
-    const desc = descRaw != null ? compressText(descRaw) : null;
+    const desc = compressToBlob(descRaw ?? null);
     if (isPg) {
       await db.run(
         "INSERT INTO authors (slug, name, poem_count, description) VALUES (?, ?, ?, ?) ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name, poem_count = EXCLUDED.poem_count, description = EXCLUDED.description",
@@ -120,12 +120,14 @@ async function main(): Promise<void> {
         [p.slug, p.title, p.authorSlug, p.dynastySlug, p.rhythmic ?? null, excerpt]
       );
       const paraJson = JSON.stringify(p.paragraphs);
+      const paraBlob = compressToBlob(paraJson)!;
       await db.run(
         "INSERT INTO poem_content (slug, paragraphs, translation, appreciation, annotation) VALUES (?, ?, ?, ?, ?) ON CONFLICT (slug) DO UPDATE SET paragraphs = EXCLUDED.paragraphs, translation = EXCLUDED.translation, appreciation = EXCLUDED.appreciation, annotation = EXCLUDED.annotation",
-        [p.slug, compressText(paraJson) ?? paraJson, compressText(p.translation ?? null), compressText(p.appreciation ?? null), compressText(p.annotation ?? null)]
+        [p.slug, paraBlob, compressToBlob(p.translation ?? null), compressToBlob(p.appreciation ?? null), compressToBlob(p.annotation ?? null)]
       );
     } else {
       const paraJson = JSON.stringify(p.paragraphs);
+      const paraBlob = compressToBlob(paraJson)!;
       await db.run("INSERT OR REPLACE INTO poems (slug, title, author_slug, dynasty_slug, rhythmic, excerpt) VALUES (?, ?, ?, ?, ?, ?)", [
         p.slug,
         p.title,
@@ -136,10 +138,10 @@ async function main(): Promise<void> {
       ]);
       await db.run("INSERT OR REPLACE INTO poem_content (slug, paragraphs, translation, appreciation, annotation) VALUES (?, ?, ?, ?, ?)", [
         p.slug,
-        compressText(paraJson) ?? paraJson,
-        compressText(p.translation ?? null),
-        compressText(p.appreciation ?? null),
-        compressText(p.annotation ?? null),
+        paraBlob,
+        compressToBlob(p.translation ?? null),
+        compressToBlob(p.appreciation ?? null),
+        compressToBlob(p.annotation ?? null),
       ]);
     }
 

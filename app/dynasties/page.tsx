@@ -9,15 +9,24 @@ export const metadata: Metadata = {
   description: "按朝代浏览诗词",
 };
 
-/** 构建时静态生成 */
-export const dynamic = "force-static";
+/** 支持 ?q= 时过滤，需按请求渲染 */
+export const dynamic = "force-dynamic";
 
 /**
- * 朝代列表：链接到该朝代诗词。数据来自 SQLite / JSON。
+ * 朝代列表：链接到该朝代诗词。支持 ?q= 按名称过滤。
  * @author poetry
  */
-export default async function DynastiesListPage() {
-  const dynasties = await getDynasties();
+export default async function DynastiesListPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const { q } = await searchParams;
+  const raw = await getDynasties();
+  const filter = (q ?? "").trim().toLowerCase();
+  const dynasties = filter
+    ? raw.filter((d) => d.name.toLowerCase().includes(filter) || d.slug.toLowerCase().includes(filter))
+    : raw;
 
   return (
     <LayoutWithSidebar sidebarLeft={<SidebarLeft />}>

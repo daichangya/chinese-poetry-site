@@ -14,7 +14,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import { getDb, closeDb } from "./client.js";
 import { createTables } from "./schema.js";
-import { compressText } from "./compress.js";
+import { compressToBlob, decompressFromBlob } from "./compress.js";
 import {
   getPoemBySlug,
   getPoemsAll,
@@ -44,9 +44,10 @@ beforeAll(async () => {
     [TEST_SLUG, "静夜思", "li-bai", "tang", null, "床前明月光，疑是地上霜。…"]
   );
   await db.run("INSERT INTO poem_tags (poem_slug, tag_slug) VALUES (?, ?)", [TEST_SLUG, "shi-ci"]);
+  const paraBlob = compressToBlob('["床前明月光，疑是地上霜。","举头望明月，低头思故乡。"]')!;
   await db.run(
     "INSERT INTO poem_content (slug, paragraphs, translation, appreciation, annotation) VALUES (?, ?, ?, ?, ?)",
-    [TEST_SLUG, '["床前明月光，疑是地上霜。","举头望明月，低头思故乡。"]', null, null, null]
+    [TEST_SLUG, paraBlob, null, null, null]
   );
 });
 
@@ -80,11 +81,12 @@ describe("db schema and row counts", () => {
     expect(content).toBe(1);
   });
 
-  it("poem_content 抽样：paragraphs 为 JSON 数组", async () => {
+  it("poem_content 抽样：paragraphs 为 JSON 数组（BLOB 解压后）", async () => {
     const db = await getDb();
-    const row = await db.get<{ paragraphs: string }>("SELECT paragraphs FROM poem_content WHERE slug = ?", [TEST_SLUG]);
+    const row = await db.get<{ paragraphs: Buffer }>("SELECT paragraphs FROM poem_content WHERE slug = ?", [TEST_SLUG]);
     expect(row).toBeDefined();
-    const arr = JSON.parse(row!.paragraphs) as string[];
+    const raw = decompressFromBlob(row!.paragraphs);
+    const arr = JSON.parse(raw ?? "[]") as string[];
     expect(arr).toHaveLength(2);
     expect(arr[0]).toContain("床前明月光");
   });
@@ -111,14 +113,14 @@ describe("getPoemBySlug", () => {
     expect(await getPoemBySlug("non-existent-slug")).toBeUndefined();
   });
 
-  it("压缩存储的 poem_content 解压后返回正确内容", async () => {
+  it("压缩存储的 poem_content（BLOB gzip）解压后返回正确内容", async () => {
     const db = await getDb();
     const slugCompressed = "test-compressed-poem";
     const longLine = "白日依山尽，黄河入海流。欲穷千里目，更上一层楼。".repeat(6);
     const paragraphs = [longLine, "第二句"];
     const paraJson = JSON.stringify(paragraphs);
-    const stored = compressText(paraJson) ?? paraJson;
-    expect(stored.startsWith("gz:")).toBe(true);
+    const stored = compressToBlob(paraJson)!;
+    expect(stored.length > 0 && stored[0] === 0x1f && stored[1] === 0x8b).toBe(true);
     await db.run("INSERT INTO poems (slug, title, author_slug, dynasty_slug, rhythmic, excerpt) VALUES (?, ?, ?, ?, ?, ?)", [
       slugCompressed,
       "登鹳雀楼",

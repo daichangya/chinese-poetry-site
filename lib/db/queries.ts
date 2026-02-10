@@ -7,7 +7,7 @@
 import "server-only";
 import * as jsonQueries from "../data-json";
 import { getDb } from "./client";
-import { decompressText } from "./compress";
+import { decompressFromBlob } from "./compress";
 import { getDynastyDisplayName } from "../dynasty";
 import { getSSGTagSlugs, SSG_MAX_SLUGS_PER_TAG } from "../ssg_config";
 import { toSlug, toPinyinToneNum } from "../slug";
@@ -110,13 +110,13 @@ export async function getPoemBySlug(slug: string): Promise<Poem | undefined> {
   if (!poemRow) return undefined;
 
   const contentRow = await db.get<{
-    paragraphs: string;
-    translation: string | null;
-    appreciation: string | null;
-    annotation: string | null;
+    paragraphs: Buffer | string;
+    translation: Buffer | string | null;
+    appreciation: Buffer | string | null;
+    annotation: Buffer | string | null;
   }>("SELECT paragraphs, translation, appreciation, annotation FROM poem_content WHERE slug = ?", [slug]);
 
-  const rawParagraphs = contentRow ? decompressText(contentRow.paragraphs) ?? contentRow.paragraphs ?? "[]" : "[]";
+  const rawParagraphs = contentRow ? decompressFromBlob(contentRow.paragraphs) ?? "[]" : "[]";
   const paragraphs = (JSON.parse(rawParagraphs) as string[]) ?? [];
   const titlePinyin = toPinyinToneNum(poemRow.title) || undefined;
   const paragraphsPinyin = paragraphs.length ? paragraphs.map((line) => toPinyinToneNum(line)) : undefined;
@@ -132,9 +132,9 @@ export async function getPoemBySlug(slug: string): Promise<Poem | undefined> {
       ? null
       : {
           paragraphs: rawParagraphs,
-          translation: decompressText(contentRow.translation) ?? contentRow.translation,
-          appreciation: decompressText(contentRow.appreciation) ?? contentRow.appreciation,
-          annotation: decompressText(contentRow.annotation) ?? contentRow.annotation,
+          translation: decompressFromBlob(contentRow.translation),
+          appreciation: decompressFromBlob(contentRow.appreciation),
+          annotation: decompressFromBlob(contentRow.annotation),
         };
   return assemblePoem(
     poemRow,
@@ -160,18 +160,32 @@ export async function getAuthors(offset = 0, limit = 10000): Promise<Author[]> {
 export async function getAuthorBySlug(slug: string): Promise<Author | undefined> {
   if (useJson()) return jsonQueries.getAuthorBySlug(slug);
   const db = await getDb();
-  const row = await db.get<{ slug: string; name: string; poem_count: number; description: string | null }>(
+  const row = await db.get<{ slug: string; name: string; poem_count: number; description: Buffer | string | null }>(
     "SELECT slug, name, poem_count, description FROM authors WHERE slug = ?",
     [slug]
   );
   if (!row) return undefined;
-  const description = decompressText(row.description) ?? row.description;
+  const description = decompressFromBlob(row.description);
   return {
     slug: row.slug,
     name: row.name,
     poem_count: row.poem_count,
     description: description ?? undefined,
   };
+}
+
+/** 按姓名精确匹配作者，供 Nav 诗人搜索跳转作者页使用。 */
+export async function getAuthorByName(name: string): Promise<Author | undefined> {
+  if (useJson()) return jsonQueries.getAuthorByName(name);
+  const trimmed = name.trim();
+  if (!trimmed) return undefined;
+  const db = await getDb();
+  const row = await db.get<{ slug: string; name: string; poem_count: number }>(
+    "SELECT slug, name, poem_count FROM authors WHERE name = ?",
+    [trimmed]
+  );
+  if (!row) return undefined;
+  return { slug: row.slug, name: row.name, poem_count: row.poem_count };
 }
 
 export async function getDynasties(): Promise<Dynasty[]> {
@@ -451,6 +465,18 @@ export async function getAuthorSlugsForSSG(limit: number): Promise<string[]> {
   if (useJson()) return jsonQueries.getAuthorSlugsForSSG(limit);
   const db = await getDb();
   const rows = await db.all<{ slug: string }>("SELECT slug FROM authors ORDER BY poem_count DESC LIMIT ?", [limit]);
+  return rows.map((r) => r.slug);
+}
+
+/** 供 sitemap 分片使用：按 slug 稳定顺序分页取作者 slug */
+export async function getAuthorSlugsForSitemap(limit: number, offset: number): Promise<string[]> {
+  if (limit <= 0 || offset < 0) return [];
+  if (useJson()) return jsonQueries.getAuthorSlugsForSitemap(limit, offset);
+  const db = await getDb();
+  const rows = await db.all<{ slug: string }>(
+    "SELECT slug FROM authors ORDER BY slug LIMIT ? OFFSET ?",
+    [limit, offset]
+  );
   return rows.map((r) => r.slug);
 }
 

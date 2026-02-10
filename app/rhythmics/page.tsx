@@ -9,15 +9,24 @@ export const metadata: Metadata = {
   description: "按词牌浏览诗词",
 };
 
-/** 构建时静态生成 */
-export const dynamic = "force-static";
+/** 支持 ?q= 时过滤，需按请求渲染 */
+export const dynamic = "force-dynamic";
 
 /**
- * 词牌列表：链接到该词牌下诗词。数据来自 SQLite / JSON。
+ * 词牌列表：链接到该词牌下诗词。支持 ?q= 按名称过滤。
  * @author poetry
  */
-export default async function RhythmicsListPage() {
-  const rhythmics = await getRhythmics();
+export default async function RhythmicsListPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const { q } = await searchParams;
+  const raw = await getRhythmics();
+  const filter = (q ?? "").trim().toLowerCase();
+  const rhythmics = filter
+    ? raw.filter((r) => r.name.toLowerCase().includes(filter) || (r.slug && r.slug.toLowerCase().includes(filter)))
+    : raw;
 
   return (
     <LayoutWithSidebar sidebarLeft={<SidebarLeft />}>

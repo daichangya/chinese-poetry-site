@@ -2,9 +2,18 @@
 
 import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 
 const SEARCH_DEBOUNCE_MS = 400;
+
+type SearchType = "keyword" | "author" | "dynasty" | "tag" | "rhythmic";
+const SEARCH_TYPE_OPTIONS: { value: SearchType; label: string; placeholder: string }[] = [
+  { value: "keyword", label: "关键词", placeholder: "标题或作者" },
+  { value: "author", label: "诗人", placeholder: "诗人名" },
+  { value: "dynasty", label: "朝代", placeholder: "朝代名" },
+  { value: "tag", label: "标签", placeholder: "标签名" },
+  { value: "rhythmic", label: "词牌", placeholder: "词牌名" },
+];
 
 const THEME_STORAGE_KEY = "poetry-theme";
 /** 未配置时使用 .md 仓库（导航 GitHub 与详情页纠错与完善同源） */
@@ -38,12 +47,41 @@ function applyTheme(value: ThemeId) {
  * 在诗文页输入时防抖后自动更新 URL 触发搜索，无需点「搜索」。
  * @author poetry
  */
+/** 仅关键词写 /poems?q=；诗人/朝代/标签/词牌均跳专题页，不写 poems 筛选。 */
+function buildPoemsSearchUrl(type: SearchType, value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return "/poems";
+  if (type !== "keyword") return "/poems";
+  const params = new URLSearchParams();
+  params.set("q", trimmed);
+  return `/poems?${params.toString()}`;
+}
+
+function deriveSearchStateFromUrl(searchParams: URLSearchParams): { type: SearchType; query: string } {
+  if (searchParams.has("rhythmic")) {
+    return { type: "rhythmic", query: searchParams.get("rhythmic") ?? "" };
+  }
+  if (searchParams.has("dynasty")) {
+    return { type: "dynasty", query: searchParams.get("dynasty") ?? "" };
+  }
+  if (searchParams.has("tag")) {
+    return { type: "tag", query: searchParams.get("tag") ?? "" };
+  }
+  if (searchParams.has("q")) {
+    return { type: "keyword", query: searchParams.get("q") ?? "" };
+  }
+  return { type: "keyword", query: "" };
+}
+
 export default function Nav() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const urlQ = pathname === "/poems" ? (searchParams.get("q") ?? "") : "";
-  const [query, setQuery] = useState(urlQ);
+  const isPoems = pathname === "/poems";
+  const urlState = useMemo(() => (isPoems ? deriveSearchStateFromUrl(searchParams) : null), [isPoems, searchParams]);
+
+  const [searchType, setSearchType] = useState<SearchType>("keyword");
+  const [query, setQuery] = useState("");
   const [theme, setThemeState] = useState<ThemeId>("pink");
 
   useEffect(() => {
@@ -51,8 +89,13 @@ export default function Nav() {
   }, []);
 
   useEffect(() => {
-    setQuery(urlQ);
-  }, [urlQ]);
+    if (urlState) {
+      setSearchType(urlState.type);
+      setQuery(urlState.query);
+    } else {
+      setQuery("");
+    }
+  }, [isPoems, searchParams.get("q"), searchParams.get("dynasty"), searchParams.get("tag"), searchParams.get("rhythmic")]);
 
   const setTheme = useCallback((value: ThemeId) => {
     localStorage.setItem(THEME_STORAGE_KEY, value);
@@ -61,46 +104,53 @@ export default function Nav() {
   }, []);
 
   useEffect(() => {
-    if (pathname !== "/poems") return;
+    if (!isPoems || searchType !== "keyword") return;
     const t = setTimeout(() => {
-      const trimmed = query.trim();
-      const currentQ = searchParams.get("q") ?? "";
-      if (trimmed === currentQ) return;
-      const dynasty = searchParams.get("dynasty") ?? "";
-      const tag = searchParams.get("tag") ?? "";
-      const rhythmic = searchParams.get("rhythmic") ?? "";
-      const parts = [
-        trimmed && `q=${encodeURIComponent(trimmed)}`,
-        dynasty && `dynasty=${encodeURIComponent(dynasty)}`,
-        tag && `tag=${encodeURIComponent(tag)}`,
-        rhythmic && `rhythmic=${encodeURIComponent(rhythmic)}`,
-      ].filter(Boolean);
-      const search = parts.length ? "?" + parts.join("&") : "";
-      router.replace(`/poems/${search}`);
+      const targetUrl = buildPoemsSearchUrl("keyword", query);
+      const current = deriveSearchStateFromUrl(searchParams);
+      const currentUrl = buildPoemsSearchUrl(current.type, current.query);
+      if (targetUrl === currentUrl) return;
+      router.replace(targetUrl);
     }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(t);
-  }, [pathname, query, router, searchParams]);
+  }, [isPoems, searchType, query, router, searchParams]);
 
   const handleSearch = useCallback(
-    (e: React.FormEvent) => {
+    async (e: React.FormEvent) => {
       e.preventDefault();
       const trimmed = query.trim();
-      if (trimmed) {
-        router.push(`/poems/?q=${encodeURIComponent(trimmed)}`);
-      } else if (pathname === "/poems") {
-        const dynasty = searchParams.get("dynasty") ?? "";
-        const tag = searchParams.get("tag") ?? "";
-        const rhythmic = searchParams.get("rhythmic") ?? "";
-        const parts = [
-          dynasty && `dynasty=${encodeURIComponent(dynasty)}`,
-          tag && `tag=${encodeURIComponent(tag)}`,
-          rhythmic && `rhythmic=${encodeURIComponent(rhythmic)}`,
-        ].filter(Boolean);
-        router.push(parts.length ? `/poems?${parts.join("&")}` : "/poems");
+      if (searchType === "author") {
+        router.push(trimmed ? `/authors/?q=${encodeURIComponent(trimmed)}` : "/authors");
+        return;
       }
+      if (searchType === "dynasty") {
+        router.push(trimmed ? `/dynasties/?q=${encodeURIComponent(trimmed)}` : "/dynasties");
+        return;
+      }
+      if (searchType === "tag") {
+        router.push(trimmed ? `/tags/?q=${encodeURIComponent(trimmed)}` : "/tags");
+        return;
+      }
+      if (searchType === "rhythmic") {
+        router.push(trimmed ? `/rhythmics/?q=${encodeURIComponent(trimmed)}` : "/rhythmics");
+        return;
+      }
+      router.push(buildPoemsSearchUrl("keyword", query));
     },
-    [query, pathname, router, searchParams]
+    [searchType, query, router]
   );
+
+  const handleTypeChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const newType = e.target.value as SearchType;
+      setSearchType(newType);
+      const targetUrl = buildPoemsSearchUrl(newType, query);
+      if (isPoems) router.replace(targetUrl);
+    },
+    [query, isPoems, router]
+  );
+
+  const currentPlaceholder = SEARCH_TYPE_OPTIONS.find((o) => o.value === searchType)?.placeholder ?? "搜索";
 
   return (
     <header className="sticky top-0 z-10 border-b border-secondary/20 bg-background backdrop-blur">
@@ -155,13 +205,29 @@ export default function Nav() {
           </Link>
         </nav>
         <div className="flex shrink-0 items-center gap-3">
-          <form onSubmit={handleSearch} className="flex">
+          <form onSubmit={handleSearch} className="flex items-center gap-2">
+            <label className="flex items-center gap-1">
+              <span className="sr-only">搜索类型</span>
+              <select
+                value={searchType}
+                onChange={handleTypeChange}
+                aria-label="搜索类型：关键词、诗人、朝代、标签、词牌"
+                className="cursor-pointer rounded-md border border-secondary/30 bg-background px-2 py-1.5 text-sm text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
+              >
+                {SEARCH_TYPE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
             <input
               type="search"
-              placeholder="搜索诗词、作者、朝代..."
+              placeholder={currentPlaceholder}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-48 rounded-md border border-secondary/30 bg-background px-3 py-1.5 text-sm text-text placeholder:text-text/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary md:w-64"
+              aria-label={currentPlaceholder}
+              className="w-40 rounded-md border border-secondary/30 bg-background px-3 py-1.5 text-sm text-text placeholder:text-text/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary md:w-52"
             />
             <button
               type="submit"

@@ -586,9 +586,13 @@ function mengxueTagsToDynasty(tags: string | string[] | undefined): string {
   return "蒙学";
 }
 
-/** 三字经、朱子家训单独归为蒙学，不随源数据 tags 标宋/明 */
-const MENGXUE_DYNASTY_OVERRIDE_TITLES = new Set(["三字经", "朱子家训"]);
-const MENGXUE_DYNASTY_OVERRIDE_FILES = new Set(["sanzijing-new.json", "sanzijing-traditional.json", "zhuzijiaxun.json"]);
+/** 三字经标宋、朱子家训标明，其余蒙学单书单篇按 tags 或蒙学 */
+const MENGXUE_DYNASTY_BY_TITLE: Record<string, string> = { "三字经": "宋", "朱子家训": "明" };
+const MENGXUE_DYNASTY_BY_FILE: Record<string, string> = {
+  "sanzijing-new.json": "宋",
+  "sanzijing-traditional.json": "宋",
+  "zhuzijiaxun.json": "明",
+};
 
 /** 蒙学 Type A：单书单篇（qianziwen, sanzijing-*, baijiaxing, zhuzijiaxun） */
 function loadMengxueFlat(seenIds: Set<string>): NormalizedPoem[] {
@@ -621,9 +625,8 @@ function loadMengxueFlat(seenIds: Set<string>): NormalizedPoem[] {
           ? [data.tags]
           : [];
       const tags = [...new Set([...tagsArr, "蒙学"])];
-      const dynastyOverride =
-        MENGXUE_DYNASTY_OVERRIDE_TITLES.has(title) || MENGXUE_DYNASTY_OVERRIDE_FILES.has(f);
-      const dynasty = dynastyOverride ? "蒙学" : mengxueTagsToDynasty(data.tags);
+      const overrideDynasty = MENGXUE_DYNASTY_BY_TITLE[title] ?? MENGXUE_DYNASTY_BY_FILE[f];
+      const dynasty = overrideDynasty ?? mengxueTagsToDynasty(data.tags);
       out.push(
         normalize(
           toSimplifiedRaw({ title, paragraphs, author, dynasty, tags }),

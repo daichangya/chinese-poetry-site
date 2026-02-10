@@ -19,15 +19,34 @@ const PAGE_SIZE = 40;
 export default async function AuthorsListPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; q?: string }>;
 }) {
-  const { page: pageStr } = await searchParams;
-  const page = Math.max(1, parseInt(pageStr ?? "1", 10) || 1);
-  const total = await countAuthors();
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const currentPage = Math.min(page, totalPages);
-  const offset = (currentPage - 1) * PAGE_SIZE;
-  const authors = await getAuthors(offset, PAGE_SIZE);
+  const { page: pageStr, q } = await searchParams;
+  const filter = (q ?? "").trim().toLowerCase();
+  const hasFilter = filter.length > 0;
+
+  let authors: Awaited<ReturnType<typeof getAuthors>>;
+  let total: number;
+  let totalPages: number;
+  let currentPage: number;
+
+  if (hasFilter) {
+    const raw = await getAuthors(0, 10000);
+    const filtered = raw.filter(
+      (a) => a.name.toLowerCase().includes(filter) || a.slug.toLowerCase().includes(filter)
+    );
+    authors = filtered;
+    total = filtered.length;
+    totalPages = 1;
+    currentPage = 1;
+  } else {
+    const page = Math.max(1, parseInt(pageStr ?? "1", 10) || 1);
+    total = await countAuthors();
+    totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    currentPage = Math.min(page, totalPages);
+    const offset = (currentPage - 1) * PAGE_SIZE;
+    authors = await getAuthors(offset, PAGE_SIZE);
+  }
 
   return (
     <LayoutWithSidebar sidebarLeft={<SidebarLeft />}>
@@ -60,11 +79,13 @@ export default async function AuthorsListPage({
                 </li>
               ))}
             </ul>
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              basePath="/authors"
-            />
+            {!hasFilter && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                basePath="/authors"
+              />
+            )}
           </>
         )}
       </div>

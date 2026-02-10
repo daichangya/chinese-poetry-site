@@ -13,7 +13,7 @@
 ## PRAGMA 与初始化
 
 - 打开库后自动执行：`PRAGMA journal_mode = WAL;`、`PRAGMA page_size = 4096;`（非 Vercel 只读时）。
-- 表结构按 `schema_version` 做版本化迁移；`createTables(db)` 创建所有表。
+- 表结构按 `schema_version` 做版本化迁移；`createTables(db)` 创建所有表。自 V2 起压缩列使用 BLOB/BYTEA；从 V1 升级时会将 poem_content、poem_tags、poems、authors 重建为 V2 结构，**需重新执行 `npm run seed:db`** 写入数据。
 
 ## Schema（单库）
 
@@ -40,10 +40,12 @@
 | 列 | 类型 | 说明 |
 |----|------|------|
 | slug | TEXT PK | 关联 poems.slug |
-| paragraphs | TEXT | 正文 JSON 数组 |
-| translation | TEXT | 译文（可选） |
-| appreciation | TEXT | 赏析（可选） |
-| annotation | TEXT | 注释（可选） |
+| paragraphs | BLOB/BYTEA | 正文 JSON（超 200 字节 gzip，否则 UTF-8） |
+| translation | BLOB/BYTEA | 译文（可选，同上压缩） |
+| appreciation | BLOB/BYTEA | 赏析（可选） |
+| annotation | BLOB/BYTEA | 注释（可选） |
+
+**V2 存储**：自 schema_version=2 起，上述四列改为 BLOB（SQLite）/ BYTEA（PostgreSQL），压缩内容直接存 gzip 字节，避免 base64 约 33% 膨胀。读时由 `decompressFromBlob` 根据 gzip 魔数解压或按 UTF-8 解码；兼容旧库中 base64 字符串。
 
 #### poem_tags（诗词-标签多对多）
 
@@ -55,7 +57,7 @@
 
 #### authors / dynasties / tags
 
-与原先一致：slug、name、poem_count；authors 另有 description。
+slug、name、poem_count；authors 另有 description（V2 为 BLOB/BYTEA，同 poem_content 压缩策略）。
 
 拼音（titlePinyin、paragraphsPinyin）在查询层由 `toPinyinToneNum` 实时计算，不落库。
 

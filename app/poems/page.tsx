@@ -99,13 +99,13 @@ function PoemsListContent() {
           : "诗文";
 
   const emptyQueryLabel = q.trim()
-    ? `“${q.trim()}”`
+    ? `"${q.trim()}"`
     : dynasty
-      ? `“${dynasty}”`
+      ? `"${dynasty}"`
       : tag.trim()
-        ? `“${tag.trim()}”`
+        ? `"${tag.trim()}"`
         : rhythmic.trim()
-          ? `“${rhythmic.trim()}”`
+          ? `"${rhythmic.trim()}"`
           : "";
 
   return (
@@ -185,7 +185,7 @@ function PoemsListContent() {
 }
 
 /**
- * 诗词列表：按 dynasty/q/tag 请求 /api/poems?dynasty=&q=&tag=&page=&limit=；dynasties/authors/tags 来自 /api/dynasties、/api/authors、/api/tags。
+ * 诗词列表：按 dynasty/q/tag/rhythmic 请求 /api/poems；dynasties/authors/tags 来自 /api/dynasties、/api/authors、/api/tags。
  * @author poetry
  */
 export default function PoemsListPage() {

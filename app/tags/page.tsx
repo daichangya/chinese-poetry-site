@@ -9,15 +9,24 @@ export const metadata: Metadata = {
   description: "按标签浏览诗词",
 };
 
-/** 构建时静态生成 */
-export const dynamic = "force-static";
+/** 支持 ?q= 时过滤，需按请求渲染 */
+export const dynamic = "force-dynamic";
 
 /**
- * 标签列表：链接到该标签下诗词。数据来自 SQLite / JSON。
+ * 标签列表：链接到该标签下诗词。支持 ?q= 按名称过滤。
  * @author poetry
  */
-export default async function TagsListPage() {
-  const tags = await getTags();
+export default async function TagsListPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const { q } = await searchParams;
+  const raw = await getTags();
+  const filter = (q ?? "").trim().toLowerCase();
+  const tags = filter
+    ? raw.filter((t) => t.name.toLowerCase().includes(filter) || t.slug.toLowerCase().includes(filter))
+    : raw;
 
   return (
     <LayoutWithSidebar sidebarLeft={<SidebarLeft />}>

@@ -27,14 +27,14 @@ CREATE TABLE IF NOT EXISTS poems (
 );
 `;
 
-/** 重表：详情页按 slug 查 */
+/** 重表：详情页按 slug 查，压缩列 BLOB */
 const POEM_CONTENT_TABLE = `
 CREATE TABLE IF NOT EXISTS poem_content (
   slug TEXT PRIMARY KEY,
-  paragraphs TEXT NOT NULL,
-  translation TEXT DEFAULT NULL,
-  appreciation TEXT DEFAULT NULL,
-  annotation TEXT DEFAULT NULL
+  paragraphs BLOB NOT NULL,
+  translation BLOB DEFAULT NULL,
+  appreciation BLOB DEFAULT NULL,
+  annotation BLOB DEFAULT NULL
 );
 `;
 
@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS authors (
   slug TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   poem_count INTEGER NOT NULL DEFAULT 0,
-  description TEXT DEFAULT NULL
+  description BLOB DEFAULT NULL
 );
 `;
 
@@ -81,8 +81,26 @@ CREATE TABLE IF NOT EXISTS schema_version (
   update_time TEXT DEFAULT (current_timestamp::text)
 );
 `;
+const PG_POEM_CONTENT_TABLE = `
+CREATE TABLE IF NOT EXISTS poem_content (
+  slug TEXT PRIMARY KEY,
+  paragraphs BYTEA NOT NULL,
+  translation BYTEA DEFAULT NULL,
+  appreciation BYTEA DEFAULT NULL,
+  annotation BYTEA DEFAULT NULL
+);
+`;
+const PG_AUTHORS_TABLE = `
+CREATE TABLE IF NOT EXISTS authors (
+  slug TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  poem_count INTEGER NOT NULL DEFAULT 0,
+  description BYTEA DEFAULT NULL
+);
+`;
+
 const PG_INSERT_SCHEMA_VERSION = `
-INSERT INTO schema_version (version) VALUES (1)
+INSERT INTO schema_version (version) VALUES (2)
 ON CONFLICT (version) DO UPDATE SET update_time = current_timestamp::text
 `;
 
@@ -92,13 +110,19 @@ export async function createTables(client: DbClient): Promise<void> {
     await client.exec(PG_SCHEMA_VERSION_TABLE);
     const row = await client.get<{ version: number }>("SELECT version FROM schema_version ORDER BY version DESC LIMIT 1");
     const currentVersion = row?.version ?? 0;
-    if (currentVersion < 1) {
+    if (currentVersion < 2) {
+      if (currentVersion >= 1) {
+        await client.exec("DROP TABLE IF EXISTS poem_tags");
+        await client.exec("DROP TABLE IF EXISTS poem_content");
+        await client.exec("DROP TABLE IF EXISTS poems");
+        await client.exec("DROP TABLE IF EXISTS authors");
+      }
       await client.exec(POEMS_TABLE);
-      await client.exec(AUTHORS_TABLE);
+      await client.exec(PG_AUTHORS_TABLE);
       await client.exec(DYNASTIES_TABLE);
       await client.exec(TAGS_TABLE);
       await client.exec(POEM_TAGS_TABLE);
-      await client.exec(POEM_CONTENT_TABLE);
+      await client.exec(PG_POEM_CONTENT_TABLE);
       await client.exec("CREATE INDEX IF NOT EXISTS idx_poems_dynasty_slug ON poems(dynasty_slug)");
       await client.exec("CREATE INDEX IF NOT EXISTS idx_poems_author_slug ON poems(author_slug)");
       await client.exec("CREATE INDEX IF NOT EXISTS idx_poem_tags_tag_slug ON poem_tags(tag_slug)");
@@ -110,7 +134,13 @@ export async function createTables(client: DbClient): Promise<void> {
   await client.exec(SCHEMA_VERSION_TABLE);
   const row = await client.get<{ version: number }>("SELECT version FROM schema_version ORDER BY version DESC LIMIT 1");
   const currentVersion = row?.version ?? 0;
-  if (currentVersion < 1) {
+  if (currentVersion < 2) {
+    if (currentVersion >= 1) {
+      await client.exec("DROP TABLE IF EXISTS poem_tags");
+      await client.exec("DROP TABLE IF EXISTS poem_content");
+      await client.exec("DROP TABLE IF EXISTS poems");
+      await client.exec("DROP TABLE IF EXISTS authors");
+    }
     await client.exec(POEMS_TABLE);
     await client.exec(AUTHORS_TABLE);
     await client.exec(DYNASTIES_TABLE);
@@ -120,7 +150,7 @@ export async function createTables(client: DbClient): Promise<void> {
     await client.exec("CREATE INDEX IF NOT EXISTS idx_poems_dynasty_slug ON poems(dynasty_slug)");
     await client.exec("CREATE INDEX IF NOT EXISTS idx_poems_author_slug ON poems(author_slug)");
     await client.exec("CREATE INDEX IF NOT EXISTS idx_poem_tags_tag_slug ON poem_tags(tag_slug)");
-    await client.exec("INSERT OR REPLACE INTO schema_version (version) VALUES (1)");
+    await client.exec("INSERT OR REPLACE INTO schema_version (version) VALUES (2)");
   }
 }
 
@@ -129,7 +159,13 @@ export function createTablesSync(db: SqliteDb): void {
   db.exec(SCHEMA_VERSION_TABLE);
   const row = db.prepare("SELECT version FROM schema_version ORDER BY version DESC LIMIT 1").get() as { version: number } | undefined;
   const currentVersion = row?.version ?? 0;
-  if (currentVersion < 1) {
+  if (currentVersion < 2) {
+    if (currentVersion >= 1) {
+      db.exec("DROP TABLE IF EXISTS poem_tags");
+      db.exec("DROP TABLE IF EXISTS poem_content");
+      db.exec("DROP TABLE IF EXISTS poems");
+      db.exec("DROP TABLE IF EXISTS authors");
+    }
     db.exec(POEMS_TABLE);
     db.exec(AUTHORS_TABLE);
     db.exec(DYNASTIES_TABLE);
@@ -139,7 +175,7 @@ export function createTablesSync(db: SqliteDb): void {
     db.exec("CREATE INDEX IF NOT EXISTS idx_poems_dynasty_slug ON poems(dynasty_slug)");
     db.exec("CREATE INDEX IF NOT EXISTS idx_poems_author_slug ON poems(author_slug)");
     db.exec("CREATE INDEX IF NOT EXISTS idx_poem_tags_tag_slug ON poem_tags(tag_slug)");
-    db.exec("INSERT OR REPLACE INTO schema_version (version) VALUES (1)");
+    db.exec("INSERT OR REPLACE INTO schema_version (version) VALUES (2)");
   }
 }
 
@@ -148,7 +184,13 @@ export function createIndexTables(db: SqliteDb): void {
   db.exec(SCHEMA_VERSION_TABLE);
   const row = db.prepare("SELECT version FROM schema_version ORDER BY version DESC LIMIT 1").get() as { version: number } | undefined;
   const currentVersion = row?.version ?? 0;
-  if (currentVersion < 1) {
+  if (currentVersion < 2) {
+    if (currentVersion >= 1) {
+      db.exec("DROP TABLE IF EXISTS poem_tags");
+      db.exec("DROP TABLE IF EXISTS poem_content");
+      db.exec("DROP TABLE IF EXISTS poems");
+      db.exec("DROP TABLE IF EXISTS authors");
+    }
     db.exec(POEMS_TABLE);
     db.exec(AUTHORS_TABLE);
     db.exec(DYNASTIES_TABLE);
@@ -157,7 +199,7 @@ export function createIndexTables(db: SqliteDb): void {
     db.exec("CREATE INDEX IF NOT EXISTS idx_poems_dynasty_slug ON poems(dynasty_slug);");
     db.exec("CREATE INDEX IF NOT EXISTS idx_poems_author_slug ON poems(author_slug);");
     db.exec("CREATE INDEX IF NOT EXISTS idx_poem_tags_tag_slug ON poem_tags(tag_slug);");
-    db.exec("INSERT OR REPLACE INTO schema_version (version) VALUES (1)");
+    db.exec("INSERT OR REPLACE INTO schema_version (version) VALUES (2)");
   }
 }
 

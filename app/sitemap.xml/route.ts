@@ -5,27 +5,22 @@
  */
 
 import { NextResponse } from "next/server";
+import { generateSitemaps } from "../sitemap";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.shi-ci.cn";
 
-export function GET() {
+export async function GET() {
+  const sitemaps = await generateSitemaps();
+  const lastmod = new Date().toISOString();
+  const entries = sitemaps
+    .map(
+      (s) =>
+        `  <sitemap>\n    <loc>${siteUrl}/sitemap/${s.id}.xml</loc>\n    <lastmod>${lastmod}</lastmod>\n  </sitemap>`
+    )
+    .join("\n");
   const index = `<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <sitemap>
-    <loc>${siteUrl}/sitemap/static.xml</loc>
-  </sitemap>
-  <sitemap>
-    <loc>${siteUrl}/sitemap/filters.xml</loc>
-  </sitemap>
-  <sitemap>
-    <loc>${siteUrl}/sitemap/authors.xml</loc>
-  </sitemap>
-  <sitemap>
-    <loc>${siteUrl}/sitemap/poems-0.xml</loc>
-  </sitemap>
-  <sitemap>
-    <loc>${siteUrl}/sitemap/poems-1.xml</loc>
-  </sitemap>
+${entries}
 </sitemapindex>`;
 
   return new NextResponse(index, {

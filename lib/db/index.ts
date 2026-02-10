@@ -15,6 +15,7 @@ export {
   getPoemBySlug,
   getAuthors,
   getAuthorBySlug,
+  getAuthorByName,
   getDynasties,
   getTags,
   getRhythmics,
@@ -34,6 +35,7 @@ export {
   getPoemSlugsForSSG,
   getPoemSlugsForSSGByPopularTags,
   getAuthorSlugsForSSG,
+  getAuthorSlugsForSitemap,
   getPoemSlugsForSitemap,
 } from "./queries";
 

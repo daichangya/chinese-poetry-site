@@ -124,6 +124,14 @@ export async function getAuthorBySlug(slug: string): Promise<Author | undefined>
   return list.find((a) => a.slug === slug);
 }
 
+/** 按姓名精确匹配作者，供 Nav 诗人搜索跳转作者页使用。 */
+export async function getAuthorByName(name: string): Promise<Author | undefined> {
+  const trimmed = name.trim();
+  if (!trimmed) return undefined;
+  const list = await getJson<Author[]>("authors.json");
+  return list.find((a) => a.name === trimmed);
+}
+
 export async function getDynasties(): Promise<Dynasty[]> {
   const rows = await getJson<Array<{ slug: string; name: string; poem_count: number }>>("dynasties.json");
   return rows.map((r) => ({ slug: r.slug, name: getDynastyDisplayNameOrFallback(r.slug, r.name), poem_count: r.poem_count }));
@@ -395,6 +403,13 @@ export async function getAuthorSlugsForSSG(limit: number): Promise<string[]> {
   if (limit <= 0) return [];
   const authors = await getJson<Author[]>("authors.json");
   return authors.slice(0, limit).map((a) => a.slug);
+}
+
+/** 供 sitemap 分片使用：按当前数组顺序分页取作者 slug */
+export async function getAuthorSlugsForSitemap(limit: number, offset: number): Promise<string[]> {
+  if (limit <= 0 || offset < 0) return [];
+  const authors = await getJson<Author[]>("authors.json");
+  return authors.slice(offset, offset + limit).map((a) => a.slug);
 }
 
 export async function getPoemSlugsForSitemap(limit: number, offset: number): Promise<string[]> {
