@@ -2,6 +2,7 @@
 
 /**
  * 左侧栏：朝代、诗人、标签、词牌导航；手风琴折叠，高亮当前筛选。
+ * 支持通过 initialData props 接收服务端预取数据，跳过客户端 API 请求。
  * @author poetry
  */
 
@@ -33,6 +34,14 @@ interface Rhythmic {
   poem_count: number;
 }
 
+/** 服务端预取的侧边栏数据 */
+export interface SidebarInitialData {
+  dynasties: Dynasty[];
+  authors: Author[];
+  tags: Tag[];
+  rhythmics: Rhythmic[];
+}
+
 type AccordionKey = "dynasty" | "poet" | "tag" | "rhythmic";
 
 function ChevronDown() {
@@ -51,17 +60,17 @@ function ChevronRight() {
   );
 }
 
-function SidebarLeftContent() {
+function SidebarLeftContent({ initialData }: { initialData?: SidebarInitialData }) {
   const searchParams = useSearchParams();
   const currentDynasty = searchParams.get("dynasty") ?? "";
   const currentTag = searchParams.get("tag") ?? "";
   const currentRhythmic = searchParams.get("rhythmic") ?? "";
 
-  const [dynasties, setDynasties] = useState<Dynasty[]>([]);
-  const [authors, setAuthors] = useState<Author[]>([]);
-  const [tags, setTags] = useState<Tag[]>([]);
-  const [rhythmics, setRhythmics] = useState<Rhythmic[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [dynasties, setDynasties] = useState<Dynasty[]>(initialData?.dynasties ?? []);
+  const [authors, setAuthors] = useState<Author[]>(initialData?.authors ?? []);
+  const [tags, setTags] = useState<Tag[]>(initialData?.tags ?? []);
+  const [rhythmics, setRhythmics] = useState<Rhythmic[]>(initialData?.rhythmics ?? []);
+  const [loading, setLoading] = useState(!initialData);
 
   const [expanded, setExpanded] = useState<Record<AccordionKey, boolean>>(() => ({
     dynasty: true,
@@ -70,7 +79,9 @@ function SidebarLeftContent() {
     rhythmic: false,
   }));
 
+  /* 仅当无 initialData 时才发起客户端 API 请求（兼容纯客户端页面） */
   useEffect(() => {
+    if (initialData) return;
     const load = async () => {
       try {
         const [dRes, aRes, tRes, rRes] = await Promise.all([
@@ -91,7 +102,7 @@ function SidebarLeftContent() {
       }
     };
     load();
-  }, []);
+  }, [initialData]);
 
   useEffect(() => {
     setExpanded((prev) => ({
@@ -323,7 +334,7 @@ function SidebarLeftContent() {
   );
 }
 
-export default function SidebarLeft() {
+export default function SidebarLeft({ initialData }: { initialData?: SidebarInitialData }) {
   return (
     <Suspense
       fallback={
@@ -332,7 +343,7 @@ export default function SidebarLeft() {
         </div>
       }
     >
-      <SidebarLeftContent />
+      <SidebarLeftContent initialData={initialData} />
     </Suspense>
   );
 }

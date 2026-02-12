@@ -10,5 +10,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const items = await getRhythmics();
-  return NextResponse.json(items);
+  return NextResponse.json(items, {
+    headers: { "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=604800" },
+  });
 }

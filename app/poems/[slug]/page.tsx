@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { getPoemBySlug, getPoemsByDynasty, getPoemSlugsForSSGByPopularTags } from "@/lib/db";
 import LayoutWithSidebar from "../../../components/LayoutWithSidebar";
-import SidebarLeft from "../../../components/SidebarLeft";
+import SidebarLeftServer from "../../../components/SidebarLeftServer";
 import PoemDetailSidebar from "../../../components/PoemDetailSidebar";
 import PoemReader from "../../../components/PoemReader";
 import { ReadingSettingsProvider } from "../../../context/ReadingSettingsContext";
@@ -14,7 +14,7 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.shi-ci.cn";
 
 /** 分层 SSG：从热门选集 tag 中收集约 N 首诗预渲染（默认 5000），其余按需生成；设 BUILD_SSG_POEM_LIMIT=0 可关闭 */
 export async function generateStaticParams(): Promise<{ slug: string }[]> {
-  const limit = parseInt(process.env.BUILD_SSG_POEM_LIMIT ?? "100", 10) || 0;
+  const limit = parseInt(process.env.BUILD_SSG_POEM_LIMIT ?? "5000", 10) || 0;
   if (limit <= 0) return [];
   const slugs = await getPoemSlugsForSSGByPopularTags(limit);
   return slugs.map((slug) => ({ slug }));
@@ -111,7 +111,7 @@ export default async function PoemDetailPage({
   return (
     <ReadingSettingsProvider>
       <LayoutWithSidebar
-        sidebarLeft={<SidebarLeft />}
+        sidebarLeft={<SidebarLeftServer />}
         sidebarRight={
           <PoemDetailSidebar poem={poem} sameDynastyPoems={sameDynastyPoems} />
         }

@@ -362,6 +362,62 @@ export async function getRandomPoemSlugs(n: number): Promise<string[]> {
   return rows.map((r) => r.slug);
 }
 
+/** 随机取 n 首诗的列表信息（一次查询，避免 N+1）；用于首页推荐与随机一首 */
+export async function getRandomPoemsForList(n: number): Promise<Array<{
+  slug: string;
+  title: string;
+  author_name: string;
+  dynasty_name?: string;
+  rhythmic?: string;
+  excerpt?: string;
+}>> {
+  if (useJson()) {
+    // JSON 数据源暂无批量查询，fallback 到 N+1
+    const slugs = await jsonQueries.getRandomPoemSlugs(n);
+    const results: Array<{ slug: string; title: string; author_name: string; dynasty_name?: string; rhythmic?: string; excerpt?: string }> = [];
+    for (const slug of slugs) {
+      const poem = await jsonQueries.getPoemBySlug(slug);
+      if (poem) {
+        const excerpt = poem.paragraphs?.[0]?.trim();
+        results.push({
+          slug: poem.slug,
+          title: poem.title,
+          author_name: poem.author,
+          dynasty_name: poem.dynasty,
+          rhythmic: poem.rhythmic,
+          excerpt: excerpt && excerpt.length > 30 ? excerpt.slice(0, 30) + "…" : excerpt,
+        });
+      }
+    }
+    return results;
+  }
+  const db = await getDb();
+  const rows = await db.all<{
+    slug: string;
+    title: string;
+    excerpt: string | null;
+    rhythmic: string | null;
+    author_name: string;
+    dynasty_name: string;
+  }>(
+    `SELECT p.slug, p.title, p.excerpt, p.rhythmic,
+            a.name AS author_name, d.name AS dynasty_name
+     FROM poems p
+     JOIN authors a ON p.author_slug = a.slug
+     JOIN dynasties d ON p.dynasty_slug = d.slug
+     ORDER BY RANDOM() LIMIT ?`,
+    [n]
+  );
+  return rows.map((r) => ({
+    slug: r.slug,
+    title: r.title,
+    author_name: r.author_name,
+    dynasty_name: getDynastyDisplayName(r.dynasty_name) || r.dynasty_name,
+    rhythmic: r.rhythmic ?? undefined,
+    excerpt: r.excerpt ?? undefined,
+  }));
+}
+
 /** 按作者 slug 查其诗词列表（分页） */
 export async function getPoemsByAuthorSlug(authorSlug: string, offset = 0, limit = 50): Promise<Poem[]> {
   if (useJson()) return jsonQueries.getPoemsByAuthorSlug(authorSlug, offset, limit);

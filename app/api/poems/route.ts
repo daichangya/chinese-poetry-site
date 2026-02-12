@@ -165,5 +165,7 @@ export async function GET(request: Request) {
     );
   }
 
-  return NextResponse.json({ items, total, page, limit });
+  return NextResponse.json({ items, total, page, limit }, {
+    headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=3600" },
+  });
 }

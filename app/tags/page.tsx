@@ -1,35 +1,26 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import { getTags } from "@/lib/db";
 import LayoutWithSidebar from "../../components/LayoutWithSidebar";
-import SidebarLeft from "../../components/SidebarLeft";
+import SidebarLeftServer from "../../components/SidebarLeftServer";
+import FilterableList from "../../components/FilterableList";
 
 export const metadata: Metadata = {
   title: "标签",
   description: "按标签浏览诗词",
 };
 
-/** 支持 ?q= 时过滤，需按请求渲染 */
-export const dynamic = "force-dynamic";
+/** ISR：每小时重新生成一次，数据极少变化 */
+export const revalidate = 3600;
 
 /**
- * 标签列表：链接到该标签下诗词。支持 ?q= 按名称过滤。
+ * 标签列表：链接到该标签下诗词。支持客户端按名称过滤。
  * @author poetry
  */
-export default async function TagsListPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ q?: string }>;
-}) {
-  const { q } = await searchParams;
-  const raw = await getTags();
-  const filter = (q ?? "").trim().toLowerCase();
-  const tags = filter
-    ? raw.filter((t) => t.name.toLowerCase().includes(filter) || t.slug.toLowerCase().includes(filter))
-    : raw;
+export default async function TagsListPage() {
+  const tags = await getTags();
 
   return (
-    <LayoutWithSidebar sidebarLeft={<SidebarLeft />}>
+    <LayoutWithSidebar sidebarLeft={<SidebarLeftServer />}>
       <div className="max-w-4xl space-y-8">
         <h1 className="font-serif text-2xl font-bold text-primary md:text-3xl">
           标签
@@ -37,27 +28,12 @@ export default async function TagsListPage({
         <p className="text-text/70">
           按标签浏览诗词，点击进入该标签下的作品列表。
         </p>
-        {tags.length === 0 ? (
-          <p className="text-text/70">暂无数据。去浏览诗文</p>
-        ) : (
-          <ul className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
-            {tags.map((t) => (
-              <li key={t.slug}>
-                <Link
-                  href={`/poems/?tag=${encodeURIComponent(t.name)}`}
-                  className="cursor-pointer flex items-baseline justify-between gap-2 rounded-lg border border-secondary/20 p-4 transition-colors duration-200 hover:border-primary hover:bg-secondary/10 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                >
-                  <span className="min-w-0 truncate font-semibold text-text">
-                    {t.name}
-                  </span>
-                  <span className="shrink-0 text-sm text-text/60">
-                    {t.poem_count} 首
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
+        <FilterableList
+          items={tags}
+          hrefPrefix="/poems/?tag="
+          placeholder="搜索标签…"
+          emptyText="暂无数据。去浏览诗文"
+        />
       </div>
     </LayoutWithSidebar>
   );

@@ -1,9 +1,21 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { Noto_Serif_SC } from "next/font/google";
 import "./globals.css";
 import Nav from "../components/Nav";
 import Footer from "../components/Footer";
 import AnalyticsOrHeadScripts from "../components/AnalyticsOrHeadScripts";
+
+/**
+ * 主字体：Noto Serif SC，通过 next/font 预加载并内联 CSS，
+ * 消除 CSS @import 的渲染阻塞问题。display: swap 确保文本立即可见。
+ */
+const notoSerifSC = Noto_Serif_SC({
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
+  display: "swap",
+  variable: "--font-noto-serif-sc",
+});
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.shi-ci.cn";
 
@@ -33,9 +45,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-Hans" suppressHydrationWarning>
+    <html lang="zh-Hans" className={notoSerifSC.variable} suppressHydrationWarning>
       <head>
         <meta name="baidu-site-verification" content="codeva-QthFvdvWPv" />
+        {/* 预连接 Google Fonts，加速装饰字体按需加载 */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){var t=localStorage.getItem("poetry-theme");if(t==="warm"||t==="ink"||t==="blue")document.documentElement.setAttribute("data-theme",t);})();`,

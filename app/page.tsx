@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { countPoems, countAuthors, countDynasties } from "@/lib/db";
 import LayoutWithSidebar from "../components/LayoutWithSidebar";
-import SidebarLeft from "../components/SidebarLeft";
+import SidebarLeftServer from "../components/SidebarLeftServer";
 import HomeRecommendations from "../components/HomeRecommendations";
 
 const HOME_RECOMMEND_SIZE = 10;
@@ -36,7 +36,7 @@ export default async function HomePage() {
   const totalDynasties = await countDynasties();
 
   return (
-    <LayoutWithSidebar sidebarLeft={<SidebarLeft />}>
+    <LayoutWithSidebar sidebarLeft={<SidebarLeftServer />}>
     <script
       type="application/ld+json"
       dangerouslySetInnerHTML={{ __html: JSON.stringify(webSiteJsonLd) }}

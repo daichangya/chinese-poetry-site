@@ -31,6 +31,7 @@ export {
   countAuthors,
   countDynasties,
   getRandomPoemSlugs,
+  getRandomPoemsForList,
   getPoemsByAuthorSlug,
   getPoemSlugsForSSG,
   getPoemSlugsForSSGByPopularTags,

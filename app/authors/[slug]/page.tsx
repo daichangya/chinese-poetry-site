@@ -3,14 +3,14 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { getAuthorBySlug, getPoemsByAuthorSlug, getAuthorSlugsForSSG } from "@/lib/db";
 import LayoutWithSidebar from "../../../components/LayoutWithSidebar";
-import SidebarLeft from "../../../components/SidebarLeft";
+import SidebarLeftServer from "../../../components/SidebarLeftServer";
 import Pagination from "../../../components/Pagination";
 
 export const dynamicParams = true;
 
 /** 分层 SSG：预渲染前 M 个作者（默认 50），其余按需生成；设 BUILD_SSG_AUTHOR_LIMIT=0 可关闭 */
 export async function generateStaticParams(): Promise<{ slug: string }[]> {
-  const limit = parseInt(process.env.BUILD_SSG_AUTHOR_LIMIT ?? "100", 10) || 0;
+  const limit = parseInt(process.env.BUILD_SSG_AUTHOR_LIMIT ?? "20000", 10) || 0;
   if (limit <= 0) return [];
   const slugs = await getAuthorSlugsForSSG(limit);
   return slugs.map((slug) => ({ slug }));
@@ -70,7 +70,7 @@ export default async function AuthorDetailPage({
   };
 
   return (
-    <LayoutWithSidebar sidebarLeft={<SidebarLeft />}>
+    <LayoutWithSidebar sidebarLeft={<SidebarLeftServer />}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}

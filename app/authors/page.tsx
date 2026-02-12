@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { getAuthors, countAuthors } from "@/lib/db";
 import LayoutWithSidebar from "../../components/LayoutWithSidebar";
-import SidebarLeft from "../../components/SidebarLeft";
+import SidebarLeftServer from "../../components/SidebarLeftServer";
 import Pagination from "../../components/Pagination";
 
 export const metadata: Metadata = {
@@ -49,7 +49,7 @@ export default async function AuthorsListPage({
   }
 
   return (
-    <LayoutWithSidebar sidebarLeft={<SidebarLeft />}>
+    <LayoutWithSidebar sidebarLeft={<SidebarLeftServer />}>
       <div className="max-w-4xl space-y-8">
         <h1 className="font-serif text-2xl font-bold text-primary md:text-3xl">
           诗人

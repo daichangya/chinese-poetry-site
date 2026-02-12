@@ -17,5 +17,7 @@ export async function GET(request: Request) {
   const limit = Math.min(MAX_LIMIT, Math.max(1, parseInt(searchParams.get("limit") ?? String(DEFAULT_LIMIT), 10) || DEFAULT_LIMIT));
   const list = await getAuthors(offset, limit);
   const total = await countAuthors();
-  return NextResponse.json({ items: list, total, offset, limit });
+  return NextResponse.json({ items: list, total, offset, limit }, {
+    headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400" },
+  });
 }

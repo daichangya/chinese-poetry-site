@@ -78,6 +78,24 @@ export default function PoemReader({
     artistic: '"Long Cang", cursive',
   };
   const fontFamily = fontFamilyMap[settings.font] ?? fontFamilyMap.song;
+
+  /* 装饰字体按需加载：仅当用户选择 calligraphy/handwriting/artistic 时动态插入 Google Fonts <link> */
+  const decorativeFontUrlMap: Record<string, string> = {
+    calligraphy: "https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap",
+    handwriting: "https://fonts.googleapis.com/css2?family=Zhi+Mang+Xing&display=swap",
+    artistic: "https://fonts.googleapis.com/css2?family=Long+Cang&display=swap",
+  };
+  useEffect(() => {
+    const url = decorativeFontUrlMap[settings.font];
+    if (!url) return;
+    const id = `font-${settings.font}`;
+    if (document.getElementById(id)) return;
+    const link = document.createElement("link");
+    link.id = id;
+    link.rel = "stylesheet";
+    link.href = url;
+    document.head.appendChild(link);
+  }, [settings.font]);
   const displayTitle = useMemo(
     () => convertToTraditional(title, converter),
     [title, converter]
